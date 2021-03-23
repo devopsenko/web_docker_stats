@@ -1,9 +1,10 @@
 from flask import Flask, Response, render_template, url_for
 import docker
-from datetime import datetime
 
 app = Flask(__name__)
 
+
+# Get data in humanreadable view
 def humansize(nbytes):
     suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
     i = 0
@@ -13,6 +14,8 @@ def humansize(nbytes):
     f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
     return '%s%s' % (f, suffixes[i])
 
+
+# Getting container data
 def statistics(container_id):
     container = client.containers.get(container_id=container_id)
     stats = container.stats(stream=False, decode=False)
@@ -53,46 +56,46 @@ def statistics(container_id):
     else:
         new_name = name + ((19 - len(name)) * ' ')
 
+    # Humanize data
     new_cpu_usage = str(round(cpu_usage, 2)) + '%'
-    new_cpu_usage += (7 - len(new_cpu_usage)) * ' '
-
+    new_cpu_usage += (7 - len(new_cpu_usage)) * ' 
     new_used_memory = humansize(used_memory)
     new_used_memory += (8 - (len(new_used_memory))) * ' '
-
     new_available_memory = humansize(available_memory)
     new_available_memory += (8 - (len(new_available_memory))) * ' '
-
     memory_usage = str(round(used_memory / available_memory * 100, 2)) + '%'
     memory_usage += (7 - (len(memory_usage))) * ' '
-
     new_input_traffic = humansize(input_traffic)
     new_input_traffic += (8 - len(new_input_traffic)) * ' '
-
     new_output_traffic = humansize(output_traffic)
     new_output_traffic += (8 - len(new_output_traffic)) * ' '
-
     new_read_info = humansize(read_info)
     new_read_info += (8 - len(new_read_info)) * ' '
-
     new_write_info = humansize(write_info)
     new_write_info += (8 - len(new_write_info)) * ' '
 
     return new_id, new_name, new_cpu_usage, new_used_memory, new_available_memory, memory_usage, new_input_traffic, new_output_traffic, new_read_info, new_write_info, pids
 
+
+# Create connection with Docker environment
 client = docker.from_env()
 
+
+# Main page
 @app.route('/')
 def index():
     info = [statistics(container.id) for container in client.containers.list()]
     title = "Docker Statistics"
     return render_template('index.html', title=title, info=info)
 
+
+# Additional page
 @app.route('/info')
 def info():
     info = [statistics(container.id) for container in client.containers.list()]
     title = "Docker Info"
     return render_template('info.html', title=title, info=info)
 
-# print([statistics(container.id) for container in client.containers.list()])
+
 if __name__ == "__main__":
     app.run(host= '46.101.225.182', debug=True, threaded=True)
